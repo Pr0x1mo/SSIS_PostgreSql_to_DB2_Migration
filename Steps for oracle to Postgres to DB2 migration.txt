@@ -1,0 +1,192 @@
+#create par file called export_params.par
+
+userid="sys/newpassword@XEPDB1 as sysdba"
+schemas=Prox
+directory=DATA_PUMP_DIR
+dumpfile=schema.dmp
+logfile=expdp_schema.log
+
+#cd to where its located:
+#run expdp to data dump oracle prox schema 
+
+C:\Users\xavie\Desktop>expdp parfile=export_params.par
+
+Using ora2pg to Migrate to PostgreSQL
+
+    Install ora2pg:
+        Download and install ora2pg from ora2pg.
+
+    Configure ora2pg:
+        Create a configuration file (ora2pg.conf) for ora2pg with the necessary connection details to both Oracle and PostgreSQL.
+
+    Run ora2pg:
+        Use ora2pg to convert the Oracle schema to PostgreSQL-compatible SQL scripts and import them into PostgreSQL.
+
+ora2pg.conf:
+
+# Oracle database connection details
+ORACLE_DSN    dbi:Oracle:host=localhost;service_name=XEPDB1;port=1521
+ORACLE_USER   sys
+ORACLE_PWD    newpassword
+SCHEMA        Prox
+EXPORT_SCHEMA 1
+
+# PostgreSQL database connection details
+PG_DSN        dbi:Pg:dbname=postgres;host=localhost;port=5432
+PG_USER       postgres
+PG_PWD        password
+
+# Set target PostgreSQL version
+PG_VERSION    16
+
+Download perl modules:
+curl -L https://cpanmin.us | perl - App::cpanminus
+cpan DBI
+cpan DBD::Oracle
+cpan DBD::Pg
+cpan Moose
+
+pump the data into PostgreSQL:
+
+ora2pg -c C:\ora2pg\ora2pg.conf -t TABLE -o tables.sql
+ora2pg -c C:\ora2pg\ora2pg.conf -t VIEW -o views.sql
+ora2pg -c C:\ora2pg\ora2pg.conf -t SEQUENCE -o sequences.sql
+ora2pg -c C:\ora2pg\ora2pg.conf -t FUNCTION -o functions.sql
+ora2pg -c C:\ora2pg\ora2pg.conf -t PROCEDURE -o procedures.sql
+ora2pg -c C:\ora2pg\ora2pg.conf -t COPY -o data.sql
+
+
+
+#Dump PostgresSQL data:
+
+pg_dump -U postgres -d postgres -n prox -s -f prox_schema.sql
+
+prox_schema.sql is:
+
+-- DB2 database creation script converted from PostgreSQL
+
+-- Name: prox; Type: SCHEMA; Schema: -; Owner: prox
+CREATE SCHEMA prox;
+
+-- Name: accounts; Type: TABLE; Schema: prox; Owner: postgres
+CREATE TABLE prox.accounts (
+    id BIGINT NOT NULL PRIMARY KEY,
+    balance DECIMAL(20,2)
+);
+
+-- Name: countries; Type: TABLE; Schema: prox; Owner: postgres
+CREATE TABLE prox.countries (
+    country_id CHAR(2) NOT NULL PRIMARY KEY,
+    country_name VARCHAR(40),
+    region_id BIGINT
+);
+
+-- Name: department_denorms; Type: TABLE; Schema: prox; Owner: postgres
+CREATE TABLE prox.department_denorms (
+    department_id INTEGER,
+    max_salary BIGINT,
+    employee_names CLOB,  -- text[] converted to CLOB
+    employee_ids INTEGER ARRAY[1000]  -- integer[] with a size of 1000 (adjust size as needed)
+);
+
+-- Name: departments; Type: TABLE; Schema: prox; Owner: postgres
+CREATE TABLE prox.departments (
+    department_id SMALLINT NOT NULL PRIMARY KEY,
+    department_name VARCHAR(30) NOT NULL,
+    manager_id INTEGER,
+    location_id SMALLINT
+);
+
+-- Name: employees; Type: TABLE; Schema: prox; Owner: postgres
+CREATE TABLE prox.employees (
+    employee_id INTEGER PRIMARY KEY,
+    first_name VARCHAR(20) NOT NULL,
+    last_name VARCHAR(25) NOT NULL,
+    email VARCHAR(25) NOT NULL,
+    phone_number VARCHAR(20),
+    hire_date TIMESTAMP NOT NULL,
+    job_id VARCHAR(10) NOT NULL,
+    salary DECIMAL(8,2),
+    commission_pct DECIMAL(2,2),
+    manager_id INTEGER,
+    department_id SMALLINT
+);
+
+-- Name: job_history; Type: TABLE; Schema: prox; Owner: postgres
+CREATE TABLE prox.job_history (
+    employee_id INTEGER NOT NULL,
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP NOT NULL,
+    job_id VARCHAR(10) NOT NULL,
+    department_id SMALLINT,
+    PRIMARY KEY (employee_id, start_date)
+);
+
+-- Name: jobs; Type: TABLE; Schema: prox; Owner: postgres
+CREATE TABLE prox.jobs (
+    job_id VARCHAR(10) PRIMARY KEY,
+    job_title VARCHAR(35) NOT NULL,
+    min_salary INTEGER,
+    max_salary INTEGER
+);
+
+-- Name: locations; Type: TABLE; Schema: prox; Owner: postgres
+CREATE TABLE prox.locations (
+    location_id SMALLINT PRIMARY KEY,
+    street_address VARCHAR(40),
+    postal_code VARCHAR(12),
+    city VARCHAR(30) NOT NULL,
+    state_province VARCHAR(25),
+    country_id CHAR(2)
+);
+
+-- Name: regions; Type: TABLE; Schema: prox; Owner: postgres
+CREATE TABLE prox.regions (
+    region_id BIGINT NOT NULL PRIMARY KEY,
+    region_name VARCHAR(25)
+);
+
+-- Indexes
+
+CREATE INDEX dept_location_ix ON prox.departments (location_id);
+CREATE INDEX emp_department_ix ON prox.employees (department_id);
+CREATE UNIQUE INDEX emp_email_uk ON prox.employees (email);
+CREATE UNIQUE INDEX emp_emp_id_pk ON prox.employees (employee_id);
+CREATE INDEX emp_job_ix ON prox.employees (job_id);
+CREATE INDEX emp_manager_ix ON prox.employees (manager_id);
+CREATE INDEX emp_name_ix ON prox.employees (last_name, first_name);
+CREATE UNIQUE INDEX job_id_pk ON prox.jobs (job_id);
+
+-- PostgreSQL Comments are omitted as DB2 handles comments differently. 
+-- Add DB2 comments if necessary.
+
+----------------------------------------------------------------------------------------------
+
+# connect to db2
+
+db2 connect to Proximo user db2admin using newpassword
+
+# In postgres department_norms table was null so produce results:
+DO $$
+DECLARE
+    first_names text[] := ARRAY['John', 'Jane', 'Mike', 'Sara', 'David', 'Emily', 'Chris', 'Laura', 'James', 'Linda'];
+    last_names text[] := ARRAY['Smith', 'Johnson', 'Williams', 'Jones', 'Brown', 'Davis', 'Miller', 'Wilson', 'Moore', 'Taylor'];
+    employee_name text;
+    employee_id int;
+BEGIN
+    FOR i IN 1..400 LOOP
+        employee_name := (SELECT first_names[array_lower(first_names, 1) + trunc(random() * (array_upper(first_names, 1) - array_lower(first_names, 1) + 1))::int] ||
+                                ' ' ||
+                                last_names[array_lower(last_names, 1) + trunc(random() * (array_upper(last_names, 1) - array_lower(last_names, 1) + 1))::int]);
+        employee_id := trunc(random() * 1000)::int;
+
+        INSERT INTO prox.department_denorms (department_id, max_salary, employee_names, employee_ids)
+        VALUES (i, 
+                (RANDOM() * 100000)::BIGINT, 
+                ARRAY[employee_name], 
+                ARRAY[employee_id]);
+    END LOOP;
+END $$;
+
+
+Set up SSIS package with postgres data source and db2 destination source. 

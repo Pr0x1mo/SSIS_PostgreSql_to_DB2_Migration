@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35013.160
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{C9674DCB-5085-4A16-B785-4C70DD1589BD}") = "PostgreSQL_to_DB2_Migration", "PostgreSQL_to_DB2_Migration\PostgreSQL_to_DB2_Migration.dtproj", "{65067E1D-96EF-4843-BC74-C5F837A6585E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Development|Default = Development|Default
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{65067E1D-96EF-4843-BC74-C5F837A6585E}.Development|Default.ActiveCfg = Development
+		{65067E1D-96EF-4843-BC74-C5F837A6585E}.Development|Default.Build.0 = Development
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2A366882-E654-4056-AC82-A3C18C6277A2}
+	EndGlobalSection
+EndGlobal
